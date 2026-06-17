@@ -1,1 +1,42 @@
+name: Update Hub Dashboard
 
+on:
+  schedule:
+    - cron: '0 10 * * *'
+  push:
+    paths:
+      - 'hub_template.html'
+      - 'build_hub_dashboard.py'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install gspread oauth2client pandas
+
+      - name: Write service account credentials
+        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT }}' > service_account.json
+
+      - name: Run build script
+        run: python build_hub_dashboard.py
+
+      - name: Commit & push data_hub.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data_hub.json hub_template.html
+          git diff --cached --quiet || git commit -m "chore: update hub dashboard data $(date +'%Y-%m-%d %H:%M WIB')"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
