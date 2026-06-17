@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub Transport — Performance Dashboard</title>
+<style>
+:root {
+  --bg:#0d1117; --surface:#161b22; --surface2:#1c2333; --surface3:#21262d;
+  --border:#30363d; --border2:#21262d;
+  --text:#e6edf3; --muted:#8b949e; --muted2:#6e7681;
+  --accent:#1f6feb; --accent2:#388bfd;
+  --green:#3fb950; --yellow:#d29922; --red:#f85149; --orange:#db6d28; --purple:#a371f7;
+  --sidebar-w:200px;
+  --topbar-h:48px;
+  --font:'Inter','Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Fira Code','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.5;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:200;overflow-y:auto;
+}
+.sidebar-brand{
+  padding:14px 14px 10px;border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.brand-icon{
+  width:32px;height:32px;border-radius:8px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#fff;flex-shrink:0;
+}
+.brand-text{line-height:1.2;}
+.brand-title{font-size:12px;font-weight:700;color:var(--text);}
+.brand-sub{font-size:10px;color:var(--muted);letter-spacing:.3px;}
+
+.sidebar-section{padding:12px 10px 6px;}
+.sidebar-label{font-size:9px;font-weight:700;color:var(--muted2);letter-spacing:.8px;text-transform:uppercase;padding:0 4px;margin-bottom:4px;}
+.sidebar-item{
+  display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;
+  border-radius:6px;border:none;background:none;color:var(--muted);
+  font-size:12px;cursor:pointer;text-align:left;transition:all .12s;
+}
+.sidebar-item:hover{background:var(--surface2);color:var(--text);}
+.sidebar-item.active{background:var(--accent);color:#fff;}
+.sidebar-item .si{font-size:13px;width:16px;text-align:center;flex-shrink:0;}
+
+.sidebar-hr{border:none;border-top:1px solid var(--border2);margin:8px 10px;}
+
+/* site tree */
+.site-group{padding:0 10px 4px;}
+.site-group-label{font-size:9px;font-weight:700;color:var(--muted2);letter-spacing:.8px;text-transform:uppercase;padding:8px 4px 4px;}
+.site-btn{
+  display:flex;align-items:center;gap:6px;width:100%;padding:5px 8px;
+  border-radius:5px;border:none;background:none;color:var(--muted);
+  font-size:11px;cursor:pointer;text-align:left;transition:all .1s;
+}
+.site-btn:hover{background:var(--surface2);color:var(--text);}
+.site-btn.active{color:var(--text);font-weight:600;}
+.site-dot{width:7px;height:7px;border-radius:50%;background:var(--muted2);flex-shrink:0;}
+.site-dot.green{background:var(--green);}
+.site-dot.blue{background:var(--accent2);}
+.site-dot.orange{background:var(--orange);}
+.site-count{margin-left:auto;font-size:10px;background:var(--surface3);color:var(--muted);padding:1px 5px;border-radius:8px;}
+
+.sidebar-footer{margin-top:auto;padding:10px 14px;border-top:1px solid var(--border2);}
+.sidebar-footer a{font-size:11px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;}
+.sidebar-footer a:hover{color:var(--text);}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 20px;height:var(--topbar-h);
+  display:flex;align-items:center;gap:10px;flex-wrap:nowrap;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;margin-right:4px;}
+.topbar-sep{color:var(--border);margin:0 2px;}
+.date-input{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:4px 8px;border-radius:6px;font-size:11px;font-family:var(--mono);
+  cursor:pointer;height:30px;
+}
+.date-input:focus{outline:none;border-color:var(--accent);}
+.date-input::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer;}
+.btn-terapkan{
+  padding:4px 12px;border-radius:6px;border:none;
+  background:var(--accent);color:#fff;font-size:11px;font-weight:600;
+  cursor:pointer;height:30px;white-space:nowrap;transition:background .12s;
+}
+.btn-terapkan:hover{background:var(--accent2);}
+.btn-fm{
+  padding:4px 10px;border-radius:6px;border:1px solid var(--border);
+  background:none;color:var(--muted);font-size:11px;font-weight:600;
+  cursor:pointer;height:30px;transition:all .12s;white-space:nowrap;
+}
+.btn-fm.active{background:var(--surface2);color:var(--text);border-color:var(--accent);}
+.btn-fm:hover{border-color:var(--muted);}
+.topbar-flex{flex:1;}
+.topbar-meta{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.topbar-update{font-size:10px;color:var(--muted);white-space:nowrap;}
+.btn-refresh{
+  padding:4px 10px;border-radius:6px;border:1px solid var(--border);
+  background:none;color:var(--muted);font-size:11px;cursor:pointer;height:30px;
+  transition:all .12s;white-space:nowrap;
+}
+.btn-refresh:hover{border-color:var(--muted);color:var(--text);}
+
+/* ── CONTENT ── */
+.content{padding:18px 20px;flex:1;}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.kpi-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;min-width:120px;flex:1;position:relative;overflow:hidden;
+  transition:border-color .15s;cursor:default;
+}
+.kpi-card:hover{border-color:var(--accent);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--card-accent,var(--accent));}
+.kpi-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+.kpi-value{font-size:22px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;}
+.kpi-unit{font-size:11px;color:var(--muted);margin-left:1px;font-weight:400;}
+.kpi-sub{font-size:9px;color:var(--muted);margin-top:3px;}
+
+/* ── SECTION ── */
+.section-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.section-badge{font-size:10px;color:var(--muted);font-weight:400;margin-left:4px;}
+
+/* ── ROW LAYOUT ── */
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.card-title{font-size:12px;font-weight:600;color:var(--text);}
+.card-badge{font-size:10px;color:var(--muted);background:var(--surface2);padding:2px 7px;border-radius:10px;}
+
+/* ── COMPARISON BAR ── */
+.cbar-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border2);}
+.cbar-row:last-child{border-bottom:none;}
+.cbar-label{width:90px;font-size:11px;color:var(--text);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cbar-wrap{flex:1;position:relative;height:6px;background:var(--surface2);border-radius:3px;overflow:visible;}
+.cbar-fill{height:100%;border-radius:3px;transition:width .4s;}
+.cbar-target{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--red);border-radius:1px;}
+.cbar-val{font-family:var(--mono);font-size:11px;width:52px;text-align:right;flex-shrink:0;color:var(--text);}
+.cbar-val.good{color:var(--green);}
+.cbar-val.bad{color:var(--red);}
+.cbar-val.warn{color:var(--yellow);}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+thead tr{background:var(--surface2);}
+th{padding:7px 10px;text-align:left;font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:7px 10px;border-bottom:1px solid var(--border2);color:var(--text);white-space:nowrap;}
+tr:hover td{background:var(--surface2);}
+.td-num{font-family:var(--mono);font-size:11px;text-align:right;}
+.td-right{text-align:right;}
+.td-good{color:var(--green);font-weight:600;}
+.td-bad{color:var(--red);font-weight:600;}
+.td-warn{color:var(--yellow);font-weight:600;}
+
+/* ── METRIC DETAIL GRID ── */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:14px;}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.metric-card-title{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px;}
+.metric-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border2);}
+.metric-item:last-child{border-bottom:none;}
+.metric-key{font-size:11px;color:var(--muted);}
+.metric-val{font-family:var(--mono);font-size:11px;color:var(--text);font-weight:600;}
+
+/* ── JALUR TABLE ── */
+.tol-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border2);}
+.tol-row:last-child{border-bottom:none;}
+.tol-rank{width:18px;font-size:10px;color:var(--muted2);text-align:center;flex-shrink:0;}
+.tol-label{width:140px;font-size:11px;color:var(--text);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tol-bar-wrap{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.tol-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s;}
+.tol-val{font-family:var(--mono);font-size:11px;color:var(--muted);width:72px;text-align:right;flex-shrink:0;}
+
+/* ── LOADER / PAGE ── */
+.loader{display:flex;align-items:center;justify-content:center;height:300px;color:var(--muted);gap:10px;}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.page{display:none;}
+.page.active{display:block;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--muted2);}
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">HT</div>
+    <div class="brand-text">
+      <div class="brand-title">Hub Transport</div>
+      <div class="brand-sub">PERFORMANCE</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Menu</div>
+    <button class="sidebar-item active" onclick="showPage('overview')" id="nav-overview">
+      <span class="si">📊</span> Overview
+    </button>
+    <button class="sidebar-item" onclick="showPage('detail')" id="nav-detail">
+      <span class="si">📋</span> Detail Metrik
+    </button>
+  </div>
+
+  <div class="sidebar-hr"></div>
+
+  <div class="site-group">
+    <div class="site-group-label">Filter Site</div>
+    <button class="site-btn active" onclick="setSite('ALL')" id="sitebtn-ALL">
+      <span class="site-dot green"></span> Semua Hub
+      <span class="site-count" id="site-count-all">—</span>
+    </button>
+  </div>
+  <div class="site-group" id="hub-site-list">
+    <!-- populated from data -->
+  </div>
+
+  <div class="sidebar-footer">
+    <a href="https://rahmatpambudi-dot.github.io/connectone/">← ConnectOne</a>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Overview — —</div>
+    <input type="date" class="date-input" id="date-from" onchange="onDateChange()">
+    <span class="topbar-sep">—</span>
+    <input type="date" class="date-input" id="date-to" onchange="onDateChange()">
+    <button class="btn-terapkan" onclick="applyDate()">Terapkan</button>
+    <button class="btn-fm" id="btn-fm" onclick="toggleFM()">FM</button>
+    <div class="topbar-flex"></div>
+    <div class="topbar-meta">
+      <span class="topbar-update" id="topbar-update">—</span>
+      <button class="btn-refresh" onclick="refreshData()">⟳ Refresh</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div id="loading" class="loader"><div class="spinner"></div> Memuat data...</div>
+
+    <!-- OVERVIEW PAGE -->
+    <div class="page" id="page-overview">
+      <div class="kpi-strip" id="kpi-strip"></div>
+
+      <div class="row-3">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">DO / Trip</div>
+            <div class="card-badge">avg per trip</div>
+          </div>
+          <div id="cbar-do"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Drop Point / Trip</div>
+            <div class="card-badge">avg per trip</div>
+          </div>
+          <div id="cbar-dp"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">TAT</div>
+            <div class="card-badge">avg jam</div>
+          </div>
+          <div id="cbar-tat"></div>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Avg KM / Trip</div>
+            <div class="card-badge">per armada</div>
+          </div>
+          <div id="cbar-km"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">UJP Average</div>
+            <div class="card-badge">per trip</div>
+          </div>
+          <div id="cbar-ujp"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Tabel Detail Per Hub <span class="section-badge" id="tbl-count">—</span></div>
+      <div class="card" style="padding:0 0 1px;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Hub</th><th class="td-right">Trips</th>
+              <th class="td-right">Avg DO</th><th class="td-right">Avg DP</th>
+              <th class="td-right">TAT</th><th class="td-right">Jam Kerja</th>
+              <th class="td-right">Prep</th><th class="td-right">Avg KM</th>
+              <th class="td-right">UJP / Trip</th><th class="td-right">Total Tol</th>
+              <th class="td-right">Rasio BBM</th>
+            </tr></thead>
+            <tbody id="tbl-overview-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL PAGE -->
+    <div class="page" id="page-detail">
+      <div class="section-title">Trend Bulanan</div>
+      <div class="card" style="padding:0 0 1px;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Bulan</th><th class="td-right">Trips</th>
+              <th class="td-right">Driver</th><th class="td-right">Avg DO</th>
+              <th class="td-right">DO Reg</th><th class="td-right">DO RT</th>
+              <th class="td-right">Avg DP</th><th class="td-right">TAT</th>
+              <th class="td-right">Jam Kerja</th><th class="td-right">Prep</th>
+              <th class="td-right">Avg KM</th><th class="td-right">Rasio BBM</th>
+              <th class="td-right">Avg UJP</th><th class="td-right">Total Tol</th>
+            </tr></thead>
+            <tbody id="tbl-monthly-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title">Per Armada (Nopol)</div>
+      <div class="card" style="padding:0 0 1px;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nopol</th><th>Armada</th>
+              <th class="td-right">Trips</th><th class="td-right">Avg DO</th>
+              <th class="td-right">Avg DP</th><th class="td-right">Avg KM</th>
+              <th class="td-right">TAT</th><th class="td-right">Prep</th>
+              <th class="td-right">Total UJP</th><th class="td-right">Rasio BBM</th>
+              <th>Top Jalur</th>
+            </tr></thead>
+            <tbody id="tbl-nopol-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title">Tol per Jalur</div>
+      <div class="card" id="tol-jalur-card"></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+const STATE = {
+  data: null, activeSite: 'ALL', page: 'overview',
+  dateFrom: null, dateTo: null, pendingFrom: null, pendingTo: null, fm: false,
+};
+
+const fmt    = n => n==null?'–':Number(n).toLocaleString('id-ID');
+const fmtK   = n => n==null?'–':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':String(Math.round(n));
+const fmtMin = m => {if(!m)return'–';const h=Math.floor(m/60),mn=Math.round(m%60);return h>0?`${h}j ${mn}m`:`${mn}m`;};
+const fmtHHMM = m => {if(!m)return'–';const h=Math.floor(m/60),mn=Math.round(m%60);return`${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;};
+
+// ── LOAD ──
+async function init() {
+  try {
+    const res = await fetch('data_hub.json');
+    STATE.data = await res.json();
+    document.getElementById('topbar-update').textContent = `Update: ${STATE.data.generated} WIB`;
+    buildSidebar();
+    setDefaultDates();
+    document.getElementById('loading').style.display = 'none';
+    showPage('overview');
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `<span>Gagal memuat data_hub.json: ${e.message}</span>`;
+  }
+}
+
+function buildSidebar() {
+  const hubs = STATE.data.hubs;
+  const listEl = document.getElementById('hub-site-list');
+  const allCount = hubs.reduce((a,h)=>a+h.total_trips,0);
+  document.getElementById('site-count-all').textContent = allCount;
+  listEl.innerHTML = hubs.map((h,i) => {
+    const colors = ['green','blue','orange','purple'];
+    const dotColor = colors[i % colors.length];
+    return `<button class="site-btn" onclick="setSite('${h.site}')" id="sitebtn-${h.site}">
+      <span class="site-dot ${dotColor}"></span> ${h.site_label}
+      <span class="site-count">${h.total_trips}</span>
+    </button>`;
+  }).join('');
+}
+
+function setDefaultDates() {
+  const hubs = STATE.data.hubs;
+  const minDate = hubs.map(h=>h.date_min).sort()[0];
+  const maxDate = hubs.map(h=>h.date_max).sort().reverse()[0];
+  document.getElementById('date-from').min = minDate;
+  document.getElementById('date-from').max = maxDate;
+  document.getElementById('date-to').min   = minDate;
+  document.getElementById('date-to').max   = maxDate;
+  // Default: full month of latest month
+  const latest = new Date(maxDate);
+  const firstOfMonth = new Date(latest.getFullYear(), latest.getMonth(), 1);
+  STATE.pendingFrom = STATE.dateFrom = firstOfMonth.toISOString().slice(0,10);
+  STATE.pendingTo   = STATE.dateTo   = maxDate;
+  document.getElementById('date-from').value = STATE.dateFrom;
+  document.getElementById('date-to').value   = STATE.dateTo;
+  updateTopbarTitle();
+}
+
+function onDateChange() {
+  STATE.pendingFrom = document.getElementById('date-from').value || null;
+  STATE.pendingTo   = document.getElementById('date-to').value   || null;
+  STATE.fm = false;
+  document.getElementById('btn-fm').classList.remove('active');
+}
+
+function applyDate() {
+  STATE.dateFrom = STATE.pendingFrom;
+  STATE.dateTo   = STATE.pendingTo;
+  updateTopbarTitle();
+  render();
+}
+
+function toggleFM() {
+  const hubs = STATE.data.hubs;
+  const maxDate = hubs.map(h=>h.date_max).sort().reverse()[0];
+  const latest = new Date(maxDate);
+  const first = new Date(latest.getFullYear(), latest.getMonth(), 1).toISOString().slice(0,10);
+  const last  = new Date(latest.getFullYear(), latest.getMonth()+1, 0).toISOString().slice(0,10);
+  STATE.fm = !STATE.fm;
+  document.getElementById('btn-fm').classList.toggle('active', STATE.fm);
+  if (STATE.fm) {
+    STATE.dateFrom = STATE.pendingFrom = first;
+    STATE.dateTo   = STATE.pendingTo   = last;
+    document.getElementById('date-from').value = first;
+    document.getElementById('date-to').value   = last;
+  }
+  updateTopbarTitle();
+  render();
+}
+
+function updateTopbarTitle() {
+  const page = STATE.page === 'overview' ? 'Overview' : 'Detail Metrik';
+  const from = STATE.dateFrom ? new Date(STATE.dateFrom).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  const to   = STATE.dateTo   ? new Date(STATE.dateTo).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  document.getElementById('topbar-title').textContent = `${page} — ${from} s/d ${to}`;
+}
+
+function setSite(key) {
+  STATE.activeSite = key;
+  document.querySelectorAll('.site-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`sitebtn-${key}`)?.classList.add('active');
+  render();
+}
+
+function showPage(name) {
+  STATE.page = name;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`page-${name}`)?.classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`nav-${name}`)?.classList.add('active');
+  updateTopbarTitle();
+  render();
+}
+
+function refreshData() { location.reload(); }
+
+// ── FILTER DATA ──
+function getHubs() {
+  const all = STATE.data.hubs;
+  return STATE.activeSite === 'ALL' ? all : all.filter(h=>h.site===STATE.activeSite);
+}
+
+function filterDaily(hub) {
+  let d = hub.daily||[];
+  if (STATE.dateFrom) d = d.filter(x=>x.date>=STATE.dateFrom);
+  if (STATE.dateTo)   d = d.filter(x=>x.date<=STATE.dateTo);
+  return d;
+}
+
+function aggDaily(days) {
+  if (!days.length) return null;
+  const sum = k=>days.reduce((a,d)=>a+(d[k]||0),0);
+  const avg = k=>{const v=days.map(d=>d[k]).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b)/v.length:null;};
+  const trips=sum('trips');
+  const tolJ={};
+  days.forEach(d=>Object.entries(d.tol_jalur||{}).forEach(([j,v])=>{tolJ[j]=(tolJ[j]||0)+v;}));
+  return {
+    trips, do_regular:sum('do_regular'), do_rt:sum('do_rt'), do_grw:sum('do_grw'),
+    total_ujp:sum('total_ujp'), total_tol:sum('total_tol'), total_parkir:sum('total_parkir'), total_bbm:sum('total_bbm'),
+    avg_ujp: trips?sum('total_ujp')/trips:null,
+    avg_dp: avg('avg_dp')!=null?+avg('avg_dp').toFixed(2):null,
+    avg_do: avg('avg_do')!=null?+avg('avg_do').toFixed(2):null,
+    avg_km: avg('avg_km')!=null?+avg('avg_km').toFixed(1):null,
+    avg_tat_min: avg('avg_tat_min')!=null?+avg('avg_tat_min').toFixed(1):null,
+    avg_prep_min: avg('avg_prep_min')!=null?+avg('avg_prep_min').toFixed(1):null,
+    avg_jamkerja_min: avg('avg_jamkerja_min')!=null?+avg('avg_jamkerja_min').toFixed(1):null,
+    avg_rasio_bbm: avg('avg_rasio_bbm')!=null?+avg('avg_rasio_bbm').toFixed(2):null,
+    tol_jalur: tolJ,
+  };
+}
+
+function aggByMonth(days) {
+  const mm={};
+  days.forEach(d=>{const m=d.date.slice(0,7);(mm[m]=mm[m]||[]).push(d);});
+  return Object.entries(mm).sort().map(([month,ds])=>{
+    const r=aggDaily(ds); r.month=month;
+    const manpowerSet=new Set();
+    ds.forEach(d=>{if(d.manpower)manpowerSet.add(d.manpower);}); // approx
+    r.manpower=ds.length?Math.round(ds.reduce((a,d)=>a+(d.manpower||0),0)/ds.length):0;
+    return r;
+  });
+}
+
+// ── RENDER ──
+function render() {
+  if (!STATE.data) return;
+  if (STATE.page==='overview') renderOverview();
+  if (STATE.page==='detail')   renderDetail();
+}
+
+function renderOverview() {
+  const hubs = getHubs();
+  // Aggregate across selected hubs
+  const allDays = hubs.flatMap(h=>filterDaily(h));
+  const agg = aggDaily(allDays) || {};
+
+  // KPI strip
+  document.getElementById('kpi-strip').innerHTML = [
+    {label:'Total Trips',    value:fmt(agg.trips),                                          color:'var(--accent)',  sub:`${hubs.length} hub aktif`},
+    {label:'Avg DO / Trip',  value:agg.avg_do?.toFixed(1)??'–',  unit:' DO',               color:'#d29922',       sub:`Reg ${fmt(agg.do_regular)} · RT ${fmt(agg.do_rt)}`},
+    {label:'Avg Drop Point', value:agg.avg_dp?.toFixed(1)??'–',  unit:' DP',               color:'#3fb950',       sub:'per trip'},
+    {label:'Avg TAT',        value:fmtHHMM(agg.avg_tat_min),                               color:'#a371f7',       sub:'turn around time'},
+    {label:'Jam Kerja',      value:fmtHHMM(agg.avg_jamkerja_min),                          color:'#db6d28',       sub:'rooster → check in'},
+    {label:'Avg Prep',       value:agg.avg_prep_min?.toFixed(0)??'–', unit:' mnt',          color:'#f85149',       sub:'sebelum berangkat'},
+    {label:'Avg KM',         value:agg.avg_km?.toFixed(0)??'–', unit:' km',                color:'#388bfd',       sub:'per trip'},
+    {label:'UJP / Trip',     value:'Rp '+fmtK(agg.avg_ujp),                                color:'#3fb950',       sub:`Total ${fmtK(agg.total_ujp)}`},
+    {label:'Total Tol',      value:'Rp '+fmtK(agg.total_tol),                              color:'#d29922',       sub:'dalam range'},
+  ].map(c=>`<div class="kpi-card" style="--card-accent:${c.color}">
+    <div class="kpi-label">${c.label}</div>
+    <div class="kpi-value">${c.value}<span class="kpi-unit">${c.unit||''}</span></div>
+    ${c.sub?`<div class="kpi-sub">${c.sub}</div>`:''}
+  </div>`).join('');
+
+  // Per-hub aggregates for comparison bars and table
+  const hubAggs = hubs.map(h=>({hub:h, agg: aggDaily(filterDaily(h))||{}}));
+
+  // Comparison bars
+  renderCbar('cbar-do',  hubAggs, r=>r.agg.avg_do,         r=>r.hub.site_label, '#d29922',  v=>v?.toFixed(1)??'–');
+  renderCbar('cbar-dp',  hubAggs, r=>r.agg.avg_dp,         r=>r.hub.site_label, '#3fb950',  v=>v?.toFixed(1)??'–');
+  renderCbar('cbar-tat', hubAggs, r=>r.agg.avg_tat_min,    r=>r.hub.site_label, '#a371f7',  v=>fmtHHMM(v));
+  renderCbar('cbar-km',  hubAggs, r=>r.agg.avg_km,         r=>r.hub.site_label, '#388bfd',  v=>v?.toFixed(0)??'–');
+  renderCbar('cbar-ujp', hubAggs, r=>r.agg.avg_ujp,        r=>r.hub.site_label, '#3fb950',  v=>'Rp '+fmtK(v));
+
+  // Table
+  document.getElementById('tbl-count').textContent = `${hubs.length} hub`;
+  document.getElementById('tbl-overview-body').innerHTML = hubAggs.map(({hub,agg})=>`<tr>
+    <td style="font-weight:600">${hub.site_label}</td>
+    <td class="td-num">${fmt(agg.trips)}</td>
+    <td class="td-num">${agg.avg_do?.toFixed(1)??'–'}</td>
+    <td class="td-num">${agg.avg_dp?.toFixed(1)??'–'}</td>
+    <td class="td-num">${fmtHHMM(agg.avg_tat_min)}</td>
+    <td class="td-num">${fmtHHMM(agg.avg_jamkerja_min)}</td>
+    <td class="td-num">${agg.avg_prep_min?.toFixed(0)??'–'} mnt</td>
+    <td class="td-num">${agg.avg_km?.toFixed(1)??'–'}</td>
+    <td class="td-num">Rp ${fmtK(agg.avg_ujp)}</td>
+    <td class="td-num">Rp ${fmtK(agg.total_tol)}</td>
+    <td class="td-num">${agg.avg_rasio_bbm?.toFixed(2)??'–'}</td>
+  </tr>`).join('');
+}
+
+function renderCbar(elId, hubAggs, valFn, labelFn, color, fmtFn) {
+  const vals = hubAggs.map(r=>valFn(r)||0);
+  const maxV = Math.max(...vals, 0.001);
+  document.getElementById(elId).innerHTML = hubAggs.map((r,i)=>`
+    <div class="cbar-row">
+      <div class="cbar-label" title="${labelFn(r)}">${labelFn(r)}</div>
+      <div class="cbar-wrap">
+        <div class="cbar-fill" style="width:${((vals[i]||0)/maxV*100).toFixed(1)}%;background:${color};"></div>
+      </div>
+      <div class="cbar-val">${fmtFn(valFn(r))}</div>
+    </div>`).join('');
+}
+
+function renderDetail() {
+  const hubs = getHubs();
+  const allDays = hubs.flatMap(h=>filterDaily(h));
+  const months  = aggByMonth(allDays);
+
+  // Monthly table
+  document.getElementById('tbl-monthly-body').innerHTML = [...months].reverse().map(m=>`<tr>
+    <td>${m.month}</td>
+    <td class="td-num">${fmt(m.trips)}</td>
+    <td class="td-num">${m.manpower??'–'}</td>
+    <td class="td-num">${m.avg_do?.toFixed(1)??'–'}</td>
+    <td class="td-num">${fmt(m.do_regular)}</td>
+    <td class="td-num">${fmt(m.do_rt)}</td>
+    <td class="td-num">${m.avg_dp?.toFixed(1)??'–'}</td>
+    <td class="td-num">${fmtHHMM(m.avg_tat_min)}</td>
+    <td class="td-num">${fmtHHMM(m.avg_jamkerja_min)}</td>
+    <td class="td-num">${m.avg_prep_min?.toFixed(0)??'–'} mnt</td>
+    <td class="td-num">${m.avg_km?.toFixed(1)??'–'}</td>
+    <td class="td-num">${m.avg_rasio_bbm?.toFixed(2)??'–'}</td>
+    <td class="td-num">Rp ${fmtK(m.avg_ujp)}</td>
+    <td class="td-num">Rp ${fmtK(m.total_tol)}</td>
+  </tr>`).join('');
+
+  // Nopol table — dari nopol_summary semua hub yg aktif
+  const allNopol = hubs.flatMap(h=>(h.nopol_summary||[]).map(n=>({...n,hub_label:h.site_label})));
+  const ac=j=>j==='MINI VAN BOX'?'<span style="background:rgba(56,139,253,.15);color:#388bfd;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">MVB</span>':
+              j==='CDE LONG CHASSIS'?'<span style="background:rgba(219,109,40,.15);color:#db6d28;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">CDE-L</span>':
+              '<span style="background:rgba(63,185,80,.15);color:#3fb950;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">CDE</span>';
+  document.getElementById('tbl-nopol-body').innerHTML = allNopol.map(n=>`<tr>
+    <td><span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-family:var(--mono);font-size:11px;color:var(--accent2)">${n.nopol}</span></td>
+    <td>${ac(n.jenis_armada)}</td>
+    <td class="td-num">${n.trips}</td>
+    <td class="td-num">${n.avg_do?.toFixed(1)??'–'}</td>
+    <td class="td-num">${n.avg_dp?.toFixed(1)??'–'}</td>
+    <td class="td-num">${n.avg_km?.toFixed(1)??'–'}</td>
+    <td class="td-num">${fmtHHMM(n.avg_tat_min)}</td>
+    <td class="td-num">${n.avg_prep_min?.toFixed(0)??'–'} mnt</td>
+    <td class="td-num">Rp ${fmtK(n.total_ujp)}</td>
+    <td class="td-num">${n.avg_rasio_bbm?.toFixed(2)??'–'}</td>
+    <td style="font-size:10px;color:var(--muted)">${(n.jalur_list||[]).join(', ')}</td>
+  </tr>`).join('');
+
+  // Tol per jalur
+  const tolMap={};
+  allDays.forEach(d=>Object.entries(d.tol_jalur||{}).forEach(([j,v])=>{tolMap[j]=(tolMap[j]||0)+v;}));
+  const entries=Object.entries(tolMap).filter(([k])=>k!=='-').sort((a,b)=>b[1]-a[1]);
+  const maxTol=entries[0]?.[1]||1;
+  document.getElementById('tol-jalur-card').innerHTML =
+    entries.map(([j,v],i)=>`<div class="tol-row">
+      <div class="tol-rank">${i+1}</div>
+      <div class="tol-label" title="${j}">${j}</div>
+      <div class="tol-bar-wrap"><div class="tol-bar-fill" style="width:${(v/maxTol*100).toFixed(1)}%"></div></div>
+      <div class="tol-val">Rp ${fmtK(v)}</div>
+    </div>`).join('');
+}
+
+init();
+</script>
+</body>
+</html>
