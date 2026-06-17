@@ -6,11 +6,11 @@
 <title>Hub Transport — Performance Dashboard</title>
 <style>
 :root {
-  --bg:#0d1117; --surface:#161b22; --surface2:#1c2333; --surface3:#21262d;
-  --border:#30363d; --border2:#21262d;
-  --text:#e6edf3; --muted:#8b949e; --muted2:#6e7681;
-  --accent:#1f6feb; --accent2:#388bfd;
-  --green:#3fb950; --yellow:#d29922; --red:#f85149; --orange:#db6d28; --purple:#a371f7;
+  --bg:#f6f8fa; --surface:#ffffff; --surface2:#f6f8fa; --surface3:#eaeef2;
+  --border:#d0d7de; --border2:#e8ecf0;
+  --text:#1f2328; --muted:#656d76; --muted2:#8c959f;
+  --accent:#0969da; --accent2:#218bff;
+  --green:#1a7f37; --yellow:#9a6700; --red:#cf222e; --orange:#bc4c00; --purple:#6639ba;
   --sidebar-w:200px;
   --topbar-h:48px;
   --font:'Inter','Segoe UI',system-ui,sans-serif;
@@ -60,7 +60,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
   font-size:11px;cursor:pointer;text-align:left;transition:all .1s;
 }
 .site-btn:hover{background:var(--surface2);color:var(--text);}
-.site-btn.active{color:var(--text);font-weight:600;}
+.site-btn.active{color:var(--accent);font-weight:700;}
 .site-dot{width:7px;height:7px;border-radius:50%;background:var(--muted2);flex-shrink:0;}
 .site-dot.green{background:var(--green);}
 .site-dot.blue{background:var(--accent2);}
@@ -123,7 +123,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
   padding:12px 14px;min-width:120px;flex:1;position:relative;overflow:hidden;
   transition:border-color .15s;cursor:default;
 }
-.kpi-card:hover{border-color:var(--accent);}
+.kpi-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(9,105,218,.08);}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--card-accent,var(--accent));}
 .kpi-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
 .kpi-value{font-size:22px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;}
@@ -149,7 +149,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .cbar-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border2);}
 .cbar-row:last-child{border-bottom:none;}
 .cbar-label{width:90px;font-size:11px;color:var(--text);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cbar-wrap{flex:1;position:relative;height:6px;background:var(--surface2);border-radius:3px;overflow:visible;}
+.cbar-wrap{flex:1;position:relative;height:6px;background:#eaeef2;border-radius:3px;overflow:visible;}
 .cbar-fill{height:100%;border-radius:3px;transition:width .4s;}
 .cbar-target{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--red);border-radius:1px;}
 .cbar-val{font-family:var(--mono);font-size:11px;width:52px;text-align:right;flex-shrink:0;color:var(--text);}
@@ -160,7 +160,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 /* ── TABLE ── */
 .table-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:11px;}
-thead tr{background:var(--surface2);}
+thead tr{background:#eaeef2;}
 th{padding:7px 10px;text-align:left;font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
 td{padding:7px 10px;border-bottom:1px solid var(--border2);color:var(--text);white-space:nowrap;}
 tr:hover td{background:var(--surface2);}
@@ -184,7 +184,7 @@ tr:hover td{background:var(--surface2);}
 .tol-row:last-child{border-bottom:none;}
 .tol-rank{width:18px;font-size:10px;color:var(--muted2);text-align:center;flex-shrink:0;}
 .tol-label{width:140px;font-size:11px;color:var(--text);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tol-bar-wrap{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.tol-bar-wrap{flex:1;height:6px;background:#eaeef2;border-radius:3px;overflow:hidden;}
 .tol-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s;}
 .tol-val{font-family:var(--mono);font-size:11px;color:var(--muted);width:72px;text-align:right;flex-shrink:0;}
 
@@ -197,7 +197,7 @@ tr:hover td{background:var(--surface2);}
 
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted2);}
 </style>
 </head>
