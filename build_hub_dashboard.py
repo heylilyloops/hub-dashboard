@@ -47,9 +47,17 @@ def parse_currency(df):
     for col in ["Total UJP", "Tol", "Parkir", "BBM"]:
         if col in df.columns:
             df[col] = pd.to_numeric(
-                df[col].astype(str).str.replace(",", "").str.strip(),
+                df[col].astype(str).str.replace(",", "").str.replace("-", "").str.strip(),
                 errors="coerce"
             ).fillna(0)
+    # Numeric cols yang mungkin kosong
+    for col in ["Total Drop Point", "Total DO", "DO Regular", "DO RT", "DO GRW",
+                "KM Delivery", "KM Start", "KM Finish", "Rasio BBM", "Volume BBM"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(
+                df[col].astype(str).str.replace(",", "").str.strip(),
+                errors="coerce"
+            )
     return df
 
 def parse_duration_min(s):
@@ -232,7 +240,9 @@ def main():
             hubs.append(hub_data)
             print(f"  ✓ {len(hub_data['daily'])} hari, {hub_data['total_trips']} trips")
         except Exception as e:
-            print(f"  ✗ Error: {e}", file=sys.stderr)
+            import traceback
+            print(f"  ✗ Error: {e}")
+            print(traceback.format_exc())
 
     output = {
         "generated": datetime.now().strftime("%Y-%m-%d %H:%M"),
