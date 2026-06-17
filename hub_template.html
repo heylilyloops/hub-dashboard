@@ -419,10 +419,10 @@ function setDefaultDates() {
   document.getElementById('date-from').max = maxDate;
   document.getElementById('date-to').min   = minDate;
   document.getElementById('date-to').max   = maxDate;
-  // Default: full month of latest month
-  const latest = new Date(maxDate);
-  const firstOfMonth = new Date(latest.getFullYear(), latest.getMonth(), 1);
-  STATE.pendingFrom = STATE.dateFrom = firstOfMonth.toISOString().slice(0,10);
+  // Default: full month of latest month — parse manually to avoid timezone shift
+  const [y, m] = maxDate.split('-').map(Number);
+  const firstOfMonth = `${y}-${String(m).padStart(2,'0')}-01`;
+  STATE.pendingFrom = STATE.dateFrom = firstOfMonth;
   STATE.pendingTo   = STATE.dateTo   = maxDate;
   document.getElementById('date-from').value = STATE.dateFrom;
   document.getElementById('date-to').value   = STATE.dateTo;
@@ -446,9 +446,9 @@ function applyDate() {
 function toggleFM() {
   const hubs = STATE.data.hubs;
   const maxDate = hubs.map(h=>h.date_max).sort().reverse()[0];
-  const latest = new Date(maxDate);
-  const first = new Date(latest.getFullYear(), latest.getMonth(), 1).toISOString().slice(0,10);
-  const last  = new Date(latest.getFullYear(), latest.getMonth()+1, 0).toISOString().slice(0,10);
+  
+  const [y,m] = maxDate.split("-").map(Number); const first = `${y}-${String(m).padStart(2,"0")}-01`; const lastDay = new Date(y,m,0).getDate(); const last = `${y}-${String(m).padStart(2,"0")}-${String(lastDay).padStart(2,"0")}`;
+  
   STATE.fm = !STATE.fm;
   document.getElementById('btn-fm').classList.toggle('active', STATE.fm);
   if (STATE.fm) {
