@@ -19,9 +19,24 @@ SPREADSHEET_ID = "171uYBJ0o-blWKfnfL2g9FaWWgfBkOOIhA1QejlXqKpg"
 # Mapping sheet name → site key & label
 # Tambah hub baru cukup di sini
 HUB_SHEETS = [
-    {"sheet_name": "HUB ALSUT", "site": "ALSUT", "site_label": "HUB ALSUT", "bu": "AHI"},
-    # {"sheet_name": "HUB BEKASI", "site": "BEKASI", "site_label": "HUB BEKASI", "bu": "HCI"},
-    # tambah hub lain di sini
+    {"sheet_name": "HUB ALSUT",      "site": "ALSUT",      "site_label": "HUB ALSUT",      "bu": "AHI"},
+    {"sheet_name": "HUB MAG",        "site": "MAG",        "site_label": "HUB MAG",        "bu": "AHI"},
+    {"sheet_name": "HUB GANDARIA",   "site": "GANDARIA",   "site_label": "HUB GANDARIA",   "bu": "AHI"},
+    {"sheet_name": "HUB KASABLANKA", "site": "KASABLANKA", "site_label": "HUB KASABLANKA", "bu": "AHI"},
+    {"sheet_name": "HUB BINTARO",    "site": "BINTARO",    "site_label": "HUB BINTARO",    "bu": "AHI"},
+    {"sheet_name": "HUB CIBUBUR",    "site": "CIBUBUR",    "site_label": "HUB CIBUBUR",    "bu": "AHI"},
+    {"sheet_name": "HUB TERASUTERA", "site": "TERASUTERA", "site_label": "HUB TERASUTERA", "bu": "AHI"},
+    {"sheet_name": "HUB PURI",       "site": "PURI",       "site_label": "HUB PURI",       "bu": "AHI"},
+    {"sheet_name": "HUB DEPOK",      "site": "DEPOK",      "site_label": "HUB DEPOK",      "bu": "AHI"},
+    {"sheet_name": "HUB AYB",        "site": "AYB",        "site_label": "HUB AYB",        "bu": "AHI"},
+    {"sheet_name": "HUB PASKAL",     "site": "PASKAL",     "site_label": "HUB PASKAL",     "bu": "AHI"},
+    {"sheet_name": "HUB IBCC",       "site": "IBCC",       "site_label": "HUB IBCC",       "bu": "AHI"},
+    {"sheet_name": "HUB PALEMBANG",  "site": "PALEMBANG",  "site_label": "HUB PALEMBANG",  "bu": "AHI"},
+    {"sheet_name": "HUB SEMARANG",   "site": "SEMARANG",   "site_label": "HUB SEMARANG",   "bu": "AHI"},
+    {"sheet_name": "HUB YOGYA",      "site": "YOGYA",      "site_label": "HUB YOGYA",      "bu": "AHI"},
+    {"sheet_name": "HUB MALANG",     "site": "MALANG",     "site_label": "HUB MALANG",     "bu": "AHI"},
+    {"sheet_name": "HUB KUTA BALI",  "site": "KUTABALI",   "site_label": "HUB KUTA BALI",  "bu": "AHI"},
+    {"sheet_name": "HUB DENPASAR",   "site": "DENPASAR",   "site_label": "HUB DENPASAR",   "bu": "AHI"},
 ]
 
 SERVICE_ACCOUNT_FILE = "service_account.json"  # file credentials
