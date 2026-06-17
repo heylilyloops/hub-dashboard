@@ -84,14 +84,15 @@ def load_sheet(gc, spreadsheet_id, sheet_name):
     return df
 
 def clean_df(df):
-    # Drop spacer rows
-    df = df.dropna(subset=["Nomor LC (SI)"])
-    df = df[df["Nomor LC (SI)"].astype(str).str.strip() != ""]
+    # Drop spacer rows — Nomor LC harus string bermakna (lebih dari 3 karakter)
+    df = df[df["Nomor LC (SI)"].astype(str).str.strip().str.len() > 3]
     print(f"  → {len(df)} rows after clean")
 
-    # Parse date
+    # Parse date — drop baris kosong / invalid (misal "0:00:00" atau kosong)
+    df = df[df["Delivery Date"].astype(str).str.strip().str.len() > 3]
     df["Delivery Date"] = pd.to_datetime(df["Delivery Date"], errors="coerce")
     df = df.dropna(subset=["Delivery Date"])
+    df = df[df["Delivery Date"].dt.year > 2000]
     df["date_str"] = df["Delivery Date"].dt.strftime("%Y-%m-%d")
     df["month_str"] = df["Delivery Date"].dt.strftime("%Y-%m")
 
