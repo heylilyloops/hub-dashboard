@@ -338,10 +338,54 @@ tr:hover td{background:var(--surface2);}
               <th class="td-right">DO Reg</th><th class="td-right">DO RT</th>
               <th class="td-right">Avg DP</th><th class="td-right">TAT</th>
               <th class="td-right">Jam Kerja</th><th class="td-right">Prep</th>
+              <th class="td-right">Travel Time</th>
               <th class="td-right">Avg KM</th><th class="td-right">Rasio BBM</th>
               <th class="td-right">Avg UJP</th><th class="td-right">Total Tol</th>
+              <th class="td-right">Parkir</th><th class="td-right">BBM</th>
             </tr></thead>
             <tbody id="tbl-monthly-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title">Operasional per Jalur</div>
+      <div class="card" style="padding:0 0 1px;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Jalur</th>
+              <th class="td-right">Trip</th>
+              <th class="td-right">Avg Berangkat</th>
+              <th class="td-right">Avg 1st–Last</th>
+              <th class="td-right">Avg Pulang</th>
+              <th class="td-right">Avg TAT</th>
+              <th class="td-right">Avg DP</th>
+              <th class="td-right">Avg Time/DP</th>
+              <th class="td-right">Avg KM</th>
+              <th class="td-right">Avg BBM (L)</th>
+              <th class="td-right">Total BBM (L)</th>
+            </tr></thead>
+            <tbody id="tbl-jalur-ops-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title">Cost per Jalur</div>
+      <div class="card" style="padding:0 0 1px;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Jalur</th>
+              <th class="td-right">Trip</th>
+              <th class="td-right">Total Tol</th>
+              <th class="td-right">Total Parkir</th>
+              <th class="td-right">Total BBM</th>
+              <th class="td-right">Total Cost</th>
+              <th class="td-right">Cost / Trip</th>
+              <th class="td-right">Cost / KM</th>
+              <th class="td-right">UJP / Trip</th>
+            </tr></thead>
+            <tbody id="tbl-jalur-cost-body"></tbody>
           </table>
         </div>
       </div>
@@ -354,17 +398,16 @@ tr:hover td{background:var(--surface2);}
               <th>Nopol</th><th>Armada</th>
               <th class="td-right">Trips</th><th class="td-right">Avg DO</th>
               <th class="td-right">Avg DP</th><th class="td-right">Avg KM</th>
-              <th class="td-right">TAT</th><th class="td-right">Prep</th>
-              <th class="td-right">Total UJP</th><th class="td-right">Rasio BBM</th>
+              <th class="td-right">TAT</th><th class="td-right">Travel Time</th>
+              <th class="td-right">Prep</th>
+              <th class="td-right">Rasio BBM</th><th class="td-right">Vol BBM (L)</th>
+              <th class="td-right">Total UJP</th>
               <th>Top Jalur</th>
             </tr></thead>
             <tbody id="tbl-nopol-body"></tbody>
           </table>
         </div>
       </div>
-
-      <div class="section-title">Tol per Jalur</div>
-      <div class="card" id="tol-jalur-card"></div>
     </div>
 
   </div><!-- /content -->
@@ -377,7 +420,7 @@ const STATE = {
 };
 
 const fmt    = n => n==null?'–':Number(n).toLocaleString('id-ID');
-const fmtK   = n => n==null?'–':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':String(Math.round(n));
+const fmtK   = n => n==null?'–':n>=1e9?(n/1e9).toFixed(1)+' M':n>=1e6?(n/1e6).toFixed(1)+' jt':n>=1e3?(n/1e3).toFixed(0)+' rb':String(Math.round(n));
 const fmtMin = m => {if(!m)return'–';const h=Math.floor(m/60),mn=Math.round(m%60);return h>0?`${h}j ${mn}m`:`${mn}m`;};
 const fmtHHMM = m => {if(!m)return'–';const h=Math.floor(m/60),mn=Math.round(m%60);return`${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;};
 
@@ -620,44 +663,75 @@ function renderDetail() {
     <td class="td-num">${m.avg_dp?.toFixed(1)??'–'}</td>
     <td class="td-num">${fmtHHMM(m.avg_tat_min)}</td>
     <td class="td-num">${fmtHHMM(m.avg_jamkerja_min)}</td>
-    <td class="td-num">${m.avg_prep_min?.toFixed(0)??'–'} mnt</td>
+    <td class="td-num">${fmtHHMM(m.avg_prep_min)}</td>
+    <td class="td-num">${fmtHHMM(m.avg_travel_min)}</td>
     <td class="td-num">${m.avg_km?.toFixed(1)??'–'}</td>
     <td class="td-num">${m.avg_rasio_bbm?.toFixed(2)??'–'}</td>
     <td class="td-num">Rp ${fmtK(m.avg_ujp)}</td>
     <td class="td-num">Rp ${fmtK(m.total_tol)}</td>
+    <td class="td-num">Rp ${fmtK(m.total_parkir)}</td>
+    <td class="td-num">Rp ${fmtK(m.total_bbm_cost)}</td>
   </tr>`).join('');
 
-  // Nopol table — dari nopol_summary semua hub yg aktif
+  // Jalur ops & cost — dari jalur_summary semua hub aktif
+  const allJalur = hubs.flatMap(h=>(h.jalur_summary||[]).filter(j=>j.jalur!=='-'));
+  // Filter by date range jika ada (jalur_summary adalah all-time, tapi filter dari daily lebih akurat)
+  // Gunakan jalur_summary as-is untuk sekarang (all-time aggregation)
+  const tatColors = j => {
+    const t = j.avg_tat_min||0;
+    if (t < 420) return 'td-good';
+    if (t < 540) return 'td-warn';
+    return 'td-bad';
+  };
+
+  document.getElementById('tbl-jalur-ops-body').innerHTML = allJalur.map(j=>`<tr>
+    <td style="font-weight:600">${j.jalur}</td>
+    <td class="td-num">${j.trips}</td>
+    <td class="td-num">${fmtHHMM(j.avg_berangkat_min)}</td>
+    <td class="td-num">${fmtHHMM(j.avg_1st_last_min)}</td>
+    <td class="td-num">${fmtHHMM(j.avg_pulang_min)}</td>
+    <td class="td-num ${tatColors(j)}">${fmtHHMM(j.avg_tat_min)}</td>
+    <td class="td-num">${j.avg_dp?.toFixed(1)??'–'}</td>
+    <td class="td-num">${fmtHHMM(j.avg_time_per_dp_min)}</td>
+    <td class="td-num">${j.avg_km?.toFixed(0)??'–'}</td>
+    <td class="td-num">${j.avg_vol_bbm?.toFixed(1)??'–'}</td>
+    <td class="td-num">${j.total_vol_bbm?.toFixed(0)??'–'}</td>
+  </tr>`).join('');
+
+  // Sort by total cost for cost table
+  const jalurByCost = [...allJalur].sort((a,b)=>(b.total_cost||0)-(a.total_cost||0));
+  document.getElementById('tbl-jalur-cost-body').innerHTML = jalurByCost.map(j=>`<tr>
+    <td style="font-weight:600">${j.jalur}</td>
+    <td class="td-num">${j.trips}</td>
+    <td class="td-num">Rp ${fmtK(j.total_tol)}</td>
+    <td class="td-num">Rp ${fmtK(j.total_parkir)}</td>
+    <td class="td-num">Rp ${fmtK(j.total_bbm_cost)}</td>
+    <td class="td-num" style="font-weight:600">Rp ${fmtK(j.total_cost)}</td>
+    <td class="td-num">Rp ${fmtK(j.cost_per_trip)}</td>
+    <td class="td-num">Rp ${fmtK(j.cost_per_km)}</td>
+    <td class="td-num">Rp ${fmtK(j.avg_ujp)}</td>
+  </tr>`).join('');
+
+  // Nopol table
   const allNopol = hubs.flatMap(h=>(h.nopol_summary||[]).map(n=>({...n,hub_label:h.site_label})));
-  const ac=j=>j==='MINI VAN BOX'?'<span style="background:rgba(56,139,253,.15);color:#388bfd;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">MVB</span>':
-              j==='CDE LONG CHASSIS'?'<span style="background:rgba(219,109,40,.15);color:#db6d28;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">CDE-L</span>':
-              '<span style="background:rgba(63,185,80,.15);color:#3fb950;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">CDE</span>';
+  const ac=j=>j==='MINI VAN BOX'?'<span style="background:rgba(56,139,253,.15);color:#0969da;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">MVB</span>':
+              j==='CDE LONG CHASSIS'?'<span style="background:rgba(188,76,0,.12);color:#bc4c00;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">CDE-L</span>':
+              '<span style="background:rgba(26,127,55,.12);color:#1a7f37;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">CDE</span>';
   document.getElementById('tbl-nopol-body').innerHTML = allNopol.map(n=>`<tr>
-    <td><span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-family:var(--mono);font-size:11px;color:var(--accent2)">${n.nopol}</span></td>
+    <td><span style="background:#f6f8fa;border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-family:var(--mono);font-size:11px;color:var(--accent)">${n.nopol}</span></td>
     <td>${ac(n.jenis_armada)}</td>
     <td class="td-num">${n.trips}</td>
     <td class="td-num">${n.avg_do?.toFixed(1)??'–'}</td>
     <td class="td-num">${n.avg_dp?.toFixed(1)??'–'}</td>
     <td class="td-num">${n.avg_km?.toFixed(1)??'–'}</td>
     <td class="td-num">${fmtHHMM(n.avg_tat_min)}</td>
+    <td class="td-num">${fmtHHMM(n.avg_travel_min)}</td>
     <td class="td-num">${n.avg_prep_min?.toFixed(0)??'–'} mnt</td>
-    <td class="td-num">Rp ${fmtK(n.total_ujp)}</td>
     <td class="td-num">${n.avg_rasio_bbm?.toFixed(2)??'–'}</td>
+    <td class="td-num">${n.avg_vol_bbm?.toFixed(1)??'–'} L</td>
+    <td class="td-num">Rp ${fmtK(n.total_ujp)}</td>
     <td style="font-size:10px;color:var(--muted)">${(n.jalur_list||[]).join(', ')}</td>
   </tr>`).join('');
-
-  // Tol per jalur
-  const tolMap={};
-  allDays.forEach(d=>Object.entries(d.tol_jalur||{}).forEach(([j,v])=>{tolMap[j]=(tolMap[j]||0)+v;}));
-  const entries=Object.entries(tolMap).filter(([k])=>k!=='-').sort((a,b)=>b[1]-a[1]);
-  const maxTol=entries[0]?.[1]||1;
-  document.getElementById('tol-jalur-card').innerHTML =
-    entries.map(([j,v],i)=>`<div class="tol-row">
-      <div class="tol-rank">${i+1}</div>
-      <div class="tol-label" title="${j}">${j}</div>
-      <div class="tol-bar-wrap"><div class="tol-bar-fill" style="width:${(v/maxTol*100).toFixed(1)}%"></div></div>
-      <div class="tol-val">Rp ${fmtK(v)}</div>
-    </div>`).join('');
 }
 
 init();
