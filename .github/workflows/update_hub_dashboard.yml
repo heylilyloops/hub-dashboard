@@ -2,12 +2,11 @@ name: Update Hub Dashboard
 
 on:
   schedule:
-    - cron: '0 10 * * *'
+    - cron: '0 10 * * *'   # setiap hari jam 17:00 WIB (10:00 UTC)
   push:
     paths:
-      - 'hub_template.html'
       - 'build_hub_dashboard.py'
-  workflow_dispatch:
+  workflow_dispatch:        # manual trigger dari GitHub UI
 
 jobs:
   build:
