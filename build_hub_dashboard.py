@@ -259,6 +259,7 @@ def main():
             import traceback
             print(f"  ✗ Error: {e}")
             print(traceback.format_exc())
+            continue
 
     output = {
         "generated": datetime.now().strftime("%Y-%m-%d %H:%M"),
