@@ -162,9 +162,10 @@ def clean_df(df):
             else None, axis=1
         )
 
-    # OTD
-    if "CheckOutHub_min" in df.columns and "Rooster_min" in df.columns:
-        df["OTD"] = ((df["CheckOutHub_min"] <= df["Rooster_min"]) & df["CheckOutHub_min"].notna() & df["Rooster_min"].notna()).astype(float)
+    # OTD = Check Out Hub <= 10:00 (600 menit sejak tengah malam)
+    OTD_THRESHOLD = 10 * 60  # jam 10:00
+    if "CheckOutHub_min" in df.columns:
+        df["OTD"] = (df["CheckOutHub_min"].notna() & (df["CheckOutHub_min"] <= OTD_THRESHOLD)).astype(float)
 
     return df
 
