@@ -186,6 +186,11 @@ def build_hub_data(df, site_cfg):
     for date, grp in df.groupby("date_str"):
         r = {"date": date}
         r.update(agg_rows(grp))
+        jalur_day = {}
+        if "Jalur" in grp.columns:
+            for jalur, jgrp in grp[grp["Jalur"] != "-"].groupby("Jalur"):
+                jalur_day[jalur] = agg_rows(jgrp)
+        r["jalur"] = jalur_day
         daily.append(r)
 
     # Monthly
@@ -193,9 +198,11 @@ def build_hub_data(df, site_cfg):
     for month, grp in df.groupby("month_str"):
         r = {"month": month}
         r.update(agg_rows(grp))
+        r["manpower"] = int(grp["NIK Driver"].nunique()) if "NIK Driver" in grp.columns else 0
         monthly.append(r)
 
     # Nopol summary
+    all_dates = sorted(df["date_str"].unique())
     nopol_summary = []
     if "Nopol" in df.columns:
         for nopol, grp in df.groupby("Nopol"):
@@ -203,7 +210,19 @@ def build_hub_data(df, site_cfg):
             s["nopol"] = nopol
             s["jenis_armada"] = grp["Jenis Armada"].mode()[0] if "Jenis Armada" in grp.columns and len(grp) else "-"
             s["jalur_list"] = grp["Jalur"].value_counts().head(3).index.tolist() if "Jalur" in grp.columns else []
+            s["hari_aktif"] = int(grp["date_str"].nunique())
+            s["total_hari"] = len(all_dates)
+            s["utilisasi_pct"] = round(grp["date_str"].nunique() / len(all_dates) * 100, 1) if all_dates else None
             nopol_summary.append(s)
+
+    # Jalur summary (all-time fallback)
+    jalur_summary = []
+    if "Jalur" in df.columns:
+        for jalur, jgrp in df[df["Jalur"] != "-"].groupby("Jalur"):
+            r2 = {"jalur": jalur}
+            r2.update(agg_rows(jgrp))
+            jalur_summary.append(r2)
+        jalur_summary.sort(key=lambda x: -x["trips"])
 
     # Tol total
     tol_total = {}
@@ -222,6 +241,7 @@ def build_hub_data(df, site_cfg):
         "all_nopol": sorted(df["Nopol"].dropna().unique().tolist()) if "Nopol" in df.columns else [],
         "tol_by_jalur": tol_total,
         "nopol_summary": nopol_summary,
+        "jalur_summary": jalur_summary,
         "monthly": monthly,
         "daily": daily,
     }
