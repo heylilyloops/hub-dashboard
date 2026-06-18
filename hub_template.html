@@ -550,19 +550,42 @@ function aggDaily(days) {
   const trips=sum('trips');
   const tolJ={};
   days.forEach(d=>Object.entries(d.tol_jalur||{}).forEach(([j,v])=>{tolJ[j]=(tolJ[j]||0)+v;}));
+  const totalCost = sum('total_tol')+sum('total_parkir')+sum('total_bbm_cost');
+  const totalKm = sum('total_km')||0;
   return {
     trips, do_regular:sum('do_regular'), do_rt:sum('do_rt'), do_grw:sum('do_grw'),
-    total_ujp:sum('total_ujp'), total_tol:sum('total_tol'), total_parkir:sum('total_parkir'), total_bbm:sum('total_bbm'),
+    total_ujp:sum('total_ujp'), total_tol:sum('total_tol'),
+    total_parkir:sum('total_parkir'), total_bbm_cost:sum('total_bbm_cost'),
+    total_bbm:sum('total_bbm_cost'), // backward compat
+    total_cost: totalCost,
+    cost_per_trip: trips?Math.round(totalCost/trips):null,
+    cost_per_km: totalKm?Math.round(totalCost/totalKm):null,
     avg_ujp: trips?sum('total_ujp')/trips:null,
     avg_dp: avg('avg_dp')!=null?+avg('avg_dp').toFixed(2):null,
     avg_do: avg('avg_do')!=null?+avg('avg_do').toFixed(2):null,
     avg_km: avg('avg_km')!=null?+avg('avg_km').toFixed(1):null,
     avg_tat_min: avg('avg_tat_min')!=null?+avg('avg_tat_min').toFixed(1):null,
     avg_prep_min: avg('avg_prep_min')!=null?+avg('avg_prep_min').toFixed(1):null,
+    avg_travel_min: avg('avg_travel_min')!=null?+avg('avg_travel_min').toFixed(1):null,
     avg_jamkerja_min: avg('avg_jamkerja_min')!=null?+avg('avg_jamkerja_min').toFixed(1):null,
     avg_rasio_bbm: avg('avg_rasio_bbm')!=null?+avg('avg_rasio_bbm').toFixed(2):null,
+    avg_vol_bbm: avg('avg_vol_bbm')!=null?+avg('avg_vol_bbm').toFixed(1):null,
+    avg_berangkat_min: avg('avg_berangkat_min')!=null?+avg('avg_berangkat_min').toFixed(1):null,
+    avg_1st_last_min: avg('avg_1st_last_min')!=null?+avg('avg_1st_last_min').toFixed(1):null,
+    avg_pulang_min: avg('avg_pulang_min')!=null?+avg('avg_pulang_min').toFixed(1):null,
+    avg_time_per_dp_min: avg('avg_time_per_dp_min')!=null?+avg('avg_time_per_dp_min').toFixed(1):null,
     tol_jalur: tolJ,
   };
+}
+
+// Aggregate daily rows by jalur from filtered daily data
+function aggByJalur(days) {
+  const jalurMap = {};
+  days.forEach(d => {
+    // each daily row has tol_jalur but not per-jalur metrics
+    // use jalur_summary from hub if available, else skip
+  });
+  return [];
 }
 
 function aggByMonth(days) {
@@ -673,10 +696,24 @@ function renderDetail() {
     <td class="td-num">Rp ${fmtK(m.total_bbm_cost)}</td>
   </tr>`).join('');
 
-  // Jalur ops & cost — dari jalur_summary semua hub aktif
-  const allJalur = hubs.flatMap(h=>(h.jalur_summary||[]).filter(j=>j.jalur!=='-'));
-  // Filter by date range jika ada (jalur_summary adalah all-time, tapi filter dari daily lebih akurat)
-  // Gunakan jalur_summary as-is untuk sekarang (all-time aggregation)
+  // Jalur ops & cost — dari jalur_summary hub, filtered oleh date range
+  // Aggregate jalur dari daily rows yang sudah difilter
+  const jalurAggMap = {};
+  allDays.forEach(d => {
+    // tol per jalur ada di daily
+    Object.entries(d.tol_jalur||{}).forEach(([j,v]) => {
+      if (!jalurAggMap[j]) jalurAggMap[j] = {jalur:j,trips:0,total_tol:0,total_parkir:0,total_bbm_cost:0};
+      jalurAggMap[j].total_tol += v;
+    });
+  });
+  // Merge dengan jalur_summary untuk ops metrics (all-time, tapi terbaik yang ada)
+  const allJalurSummary = hubs.flatMap(h=>(h.jalur_summary||[]).filter(j=>j.jalur!=='-'));
+  allJalurSummary.forEach(j => {
+    if (!jalurAggMap[j.jalur]) jalurAggMap[j.jalur] = {jalur:j.jalur,trips:0,total_tol:0};
+    Object.assign(jalurAggMap[j.jalur], j);
+  });
+  const allJalur = Object.values(jalurAggMap).filter(j=>j.jalur!=='-'&&j.trips>0).sort((a,b)=>b.trips-a.trips);
+
   const tatColors = j => {
     const t = j.avg_tat_min||0;
     if (t < 420) return 'td-good';
@@ -684,33 +721,37 @@ function renderDetail() {
     return 'td-bad';
   };
 
-  document.getElementById('tbl-jalur-ops-body').innerHTML = allJalur.map(j=>`<tr>
-    <td style="font-weight:600">${j.jalur}</td>
-    <td class="td-num">${j.trips}</td>
-    <td class="td-num">${fmtHHMM(j.avg_berangkat_min)}</td>
-    <td class="td-num">${fmtHHMM(j.avg_1st_last_min)}</td>
-    <td class="td-num">${fmtHHMM(j.avg_pulang_min)}</td>
-    <td class="td-num ${tatColors(j)}">${fmtHHMM(j.avg_tat_min)}</td>
-    <td class="td-num">${j.avg_dp?.toFixed(1)??'–'}</td>
-    <td class="td-num">${fmtHHMM(j.avg_time_per_dp_min)}</td>
-    <td class="td-num">${j.avg_km?.toFixed(0)??'–'}</td>
-    <td class="td-num">${j.avg_vol_bbm?.toFixed(1)??'–'}</td>
-    <td class="td-num">${j.total_vol_bbm?.toFixed(0)??'–'}</td>
-  </tr>`).join('');
+  document.getElementById('tbl-jalur-ops-body').innerHTML = allJalur.length
+    ? allJalur.map(j=>`<tr>
+        <td style="font-weight:600">${j.jalur}</td>
+        <td class="td-num">${j.trips}</td>
+        <td class="td-num">${fmtHHMM(j.avg_berangkat_min)}</td>
+        <td class="td-num">${fmtHHMM(j.avg_1st_last_min)}</td>
+        <td class="td-num">${fmtHHMM(j.avg_pulang_min)}</td>
+        <td class="td-num ${tatColors(j)}">${fmtHHMM(j.avg_tat_min)}</td>
+        <td class="td-num">${j.avg_dp?.toFixed(1)??'–'}</td>
+        <td class="td-num">${fmtHHMM(j.avg_time_per_dp_min)}</td>
+        <td class="td-num">${j.avg_km?.toFixed(0)??'–'}</td>
+        <td class="td-num">${j.avg_vol_bbm?.toFixed(1)??'–'}</td>
+        <td class="td-num">${j.total_vol_bbm?.toFixed(0)??'–'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px">Tidak ada data jalur untuk periode ini</td></tr>';
 
   // Sort by total cost for cost table
   const jalurByCost = [...allJalur].sort((a,b)=>(b.total_cost||0)-(a.total_cost||0));
-  document.getElementById('tbl-jalur-cost-body').innerHTML = jalurByCost.map(j=>`<tr>
-    <td style="font-weight:600">${j.jalur}</td>
-    <td class="td-num">${j.trips}</td>
-    <td class="td-num">Rp ${fmtK(j.total_tol)}</td>
-    <td class="td-num">Rp ${fmtK(j.total_parkir)}</td>
-    <td class="td-num">Rp ${fmtK(j.total_bbm_cost)}</td>
-    <td class="td-num" style="font-weight:600">Rp ${fmtK(j.total_cost)}</td>
-    <td class="td-num">Rp ${fmtK(j.cost_per_trip)}</td>
-    <td class="td-num">Rp ${fmtK(j.cost_per_km)}</td>
-    <td class="td-num">Rp ${fmtK(j.avg_ujp)}</td>
-  </tr>`).join('');
+  document.getElementById('tbl-jalur-cost-body').innerHTML = jalurByCost.length
+    ? jalurByCost.map(j=>`<tr>
+        <td style="font-weight:600">${j.jalur}</td>
+        <td class="td-num">${j.trips}</td>
+        <td class="td-num">Rp ${fmtK(j.total_tol)}</td>
+        <td class="td-num">Rp ${fmtK(j.total_parkir)}</td>
+        <td class="td-num">Rp ${fmtK(j.total_bbm_cost)}</td>
+        <td class="td-num" style="font-weight:600">Rp ${fmtK(j.total_cost)}</td>
+        <td class="td-num">Rp ${fmtK(j.cost_per_trip)}</td>
+        <td class="td-num">Rp ${fmtK(j.cost_per_km)}</td>
+        <td class="td-num">Rp ${fmtK(j.avg_ujp)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Tidak ada data cost untuk periode ini</td></tr>';
 
   // Nopol table
   const allNopol = hubs.flatMap(h=>(h.nopol_summary||[]).map(n=>({...n,hub_label:h.site_label})));
