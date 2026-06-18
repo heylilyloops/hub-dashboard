@@ -116,6 +116,7 @@ def clean_df(df):
     df["Delivery Date"] = pd.to_datetime(df["Delivery Date"], errors="coerce")
     df = df.dropna(subset=["Delivery Date"])
     df = df[df["Delivery Date"].dt.year > 2000]
+    df = df[df["Delivery Date"] <= pd.Timestamp.today()]  # drop future dates
     df["date_str"] = df["Delivery Date"].dt.strftime("%Y-%m-%d")
     df["month_str"] = df["Delivery Date"].dt.strftime("%Y-%m")
 
