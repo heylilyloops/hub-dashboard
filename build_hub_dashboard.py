@@ -130,14 +130,41 @@ def clean_df(df):
             df[col + "_min"] = df[col].apply(parse_duration_min)
 
     # Time fields → menit sejak tengah malam
-    df["Rooster_min"] = df["Rooster"].apply(parse_time_min) if "Rooster" in df.columns else None
-    df["CheckInHub_min"] = df["Check In Hub"].apply(parse_time_min) if "Check In Hub" in df.columns else None
+    for col_name, attr in [
+        ("Rooster", "Rooster_min"),
+        ("Check Out Hub", "CheckOutHub_min"),
+        ("Check In First Cust", "CheckInFirstCust_min"),
+        ("Check Out Last Cust", "CheckOutLastCust_min"),
+        ("Check In Hub", "CheckInHub_min"),
+    ]:
+        if col_name in df.columns:
+            df[attr] = df[col_name].apply(parse_time_min)
 
-    # Jam kerja
+    # Gap fields
+    def safe_gap(a, b):
+        diff = df[a] - df[b]
+        return diff.apply(lambda x: x + 1440 if x is not None and not pd.isna(x) and x < 0 else x)
+
     if "CheckInHub_min" in df.columns and "Rooster_min" in df.columns:
-        df["JamKerja_min"] = (df["CheckInHub_min"] - df["Rooster_min"]).apply(
-            lambda x: x + 1440 if x is not None and x < 0 else x
+        df["JamKerja_min"] = safe_gap("CheckInHub_min", "Rooster_min")
+    if "CheckInFirstCust_min" in df.columns and "CheckOutHub_min" in df.columns:
+        df["GapBerangkat_min"] = safe_gap("CheckInFirstCust_min", "CheckOutHub_min")
+    if "CheckOutLastCust_min" in df.columns and "CheckInFirstCust_min" in df.columns:
+        df["Gap1stLast_min"] = safe_gap("CheckOutLastCust_min", "CheckInFirstCust_min")
+    if "CheckInHub_min" in df.columns and "CheckOutLastCust_min" in df.columns:
+        df["GapPulang_min"] = safe_gap("CheckInHub_min", "CheckOutLastCust_min")
+
+    # Time per DP
+    if "Gap1stLast_min" in df.columns and "Total Drop Point" in df.columns:
+        df["TimePerDP_min"] = df.apply(
+            lambda r: r["Gap1stLast_min"] / r["Total Drop Point"]
+            if pd.notna(r["Gap1stLast_min"]) and pd.notna(r["Total Drop Point"]) and r["Total Drop Point"] > 0
+            else None, axis=1
         )
+
+    # OTD
+    if "CheckOutHub_min" in df.columns and "Rooster_min" in df.columns:
+        df["OTD"] = ((df["CheckOutHub_min"] <= df["Rooster_min"]) & df["CheckOutHub_min"].notna() & df["Rooster_min"].notna()).astype(float)
 
     return df
 
@@ -173,10 +200,21 @@ def agg_rows(df):
         "total_bbm":  int(s("BBM")),
         "avg_ujp":    round(float(df["Total UJP"].mean()), 0) if "Total UJP" in df.columns else None,
         "avg_km":     a("KM Delivery"),
-        "avg_tat_min":        a("TAT_min"),
-        "avg_prep_min":       a("Preparation Time_min"),
-        "avg_jamkerja_min":   a("JamKerja_min"),
-        "avg_rasio_bbm":      a("Rasio BBM"),
+        "avg_tat_min":          a("TAT_min"),
+        "avg_prep_min":         a("Preparation Time_min"),
+        "avg_travel_min":       a("Travel Time_min"),
+        "avg_jamkerja_min":     a("JamKerja_min"),
+        "avg_berangkat_min":    a("GapBerangkat_min"),
+        "avg_1st_last_min":     a("Gap1stLast_min"),
+        "avg_pulang_min":       a("GapPulang_min"),
+        "avg_time_per_dp_min":  a("TimePerDP_min"),
+        "avg_rasio_bbm":        a("Rasio BBM"),
+        "avg_vol_bbm":          a("Volume BBM"),
+        "total_vol_bbm":        round(float(df["Volume BBM"].sum()), 1) if "Volume BBM" in df.columns else 0,
+        "total_km":             round(float(df["KM Delivery"].sum()), 1) if "KM Delivery" in df.columns else 0,
+        "otd_count":            int(df["OTD"].sum()) if "OTD" in df.columns else 0,
+        "otd_pct":              round(float(df["OTD"].sum()) / trips * 100, 1) if "OTD" in df.columns and trips else None,
+        "nopol_aktif":          int(df["Nopol"].nunique()) if "Nopol" in df.columns else 0,
         "tol_jalur": tol_j,
     }
 
